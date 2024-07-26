@@ -1,0 +1,10 @@
+services:
+  ansible:
+    build: .
+    environment:
+      - ANSIBLE_HOST_KEY_CHECKING=False=value
+    volumes:
+      - ./hosts:/etc/ansible/hosts
+      - ./nginx.yml:/nginx.yml
+      - ./templates:/templates
+      - ./id_rsa:/root/.ssh/id_rsa

@@ -1,0 +1,75 @@
+---
+- name: Install and configure Nginx
+  hosts: web
+  become: yes
+
+  vars:
+    config_template: site.conf.j2
+
+  tasks:
+
+    - name: Ensure Nginx is installed on Debian-based systems
+      apt:
+        name: nginx
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Ensure Nginx is installed on Red Hat-based systems
+      yum:
+        name: nginx
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Ensure Nginx is running and enabled on boot
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Create Nginx configuration directory if it does not exist
+      file:
+        path: /etc/nginx/sites-available
+        state: directory
+      when: ansible_os_family == "Debian"
+
+    - name: Copy Nginx configuration template
+      template:
+        src: "{{ config_template }}"
+        dest: /etc/nginx/sites-available/sites.conf
+        owner: root
+        group: root
+        mode: '0644'
+      when: ansible_os_family == "Debian"
+
+    - name: Enable Nginx site configuration on Debian-based systems
+      file:
+        src: /etc/nginx/sites-available/sites.conf
+        dest: /etc/nginx/sites-enabled/sites.conf
+        state: link
+        force: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Copy Nginx configuration template on Red Hat-based systems
+      template:
+        src: "{{ config_template }}"
+        dest: /etc/nginx/conf.d/sites.conf.conf
+        owner: root
+        group: root
+        mode: '0644'
+      when: ansible_os_family == "RedHat"
+
+    - name: Test Nginx configuration
+      command: nginx -t
+      register: nginx_test
+      ignore_errors: yes
+
+    - name: Fail if Nginx configuration test failed
+      fail:
+        msg: "Nginx configuration test failed"
+      when: nginx_test.rc != 0
+
+    - name: Reload Nginx to apply configuration
+      service:
+        name: nginx
+        state: reloaded
+      when: nginx_test.rc == 0

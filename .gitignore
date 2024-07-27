@@ -131,3 +131,7 @@ dist
 
 id_rsa
 id_rsa.pub
+laboratory_dev.pem
+
+.terraform
+.terraform*
